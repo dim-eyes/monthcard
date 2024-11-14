@@ -37,21 +37,28 @@ func NewMonthCardRepo(data *Data, logger log.Logger) biz.MonthCardRepo {
 
 func (r *monthCardRepo) OpenMonthCard(ctx context.Context, req *pb.OpenMonthCardRequest) (*pb.OpenMonthCardReply, error) {
 	fmt.Println(time.Now().Unix())
-	/*openStatus := r.IsOpenMonthCard(ctx, req.UserId)
+	openStatus := r.IsOpenMonthCard(ctx, req.UserId)
 	if openStatus {
 		return nil, constant.MONTH_CARD_HAVE_OPENED_ERROR
-	}*/
-	//return nil, biz.USER_NOT_FOUND
-	rm := &MonthCard{}
-	res := r.data.db.WithContext(ctx).Model(rm).Where("userid = ?", req.UserId).First(rm)
+	}
+	currentTime := time.Now().Unix()
+	expireTime := currentTime + (constant.DAY_OF_MONTH_CARD * 24 * 60 * 60)
+
+	item := MonthCard{
+		Userid:     req.UserId,
+		ExpireTime: expireTime,
+	}
+	res := r.data.db.WithContext(ctx).Create(&item)
+	/*res := r.data.db.WithContext(ctx).Model(rm).Where("userid = ?", req.UserId).First(rm)*/
 	if res.Error != nil {
 		return nil, res.Error
 	}
-	expireTime := time.Now().Unix() + (constant.DAY_OF_MONTH_CARD * 24 * 60 * 60)
+
 	setData := map[string]interface{}{"userId": req.UserId, "days": constant.DAY_OF_MONTH_CARD, "expireTime": expireTime, "saveMoney": 0}
 	r.data.rdb.HMSet(ctx, fmt.Sprintf("monthCard:userId:%d", req.UserId), setData)
+	r.data.rdb.ExpireAt(ctx, fmt.Sprintf("monthCard:userId:%d", req.UserId), time.Unix(int64(expireTime), 0))
 	r.logger.WithContext(ctx).Info("gormDB: GetMonthCard, userId: ", res)
-	return &pb.OpenMonthCardReply{UserId: rm.Userid, ExpireTime: rm.ExpireTime}, nil
+	return &pb.OpenMonthCardReply{UserId: req.UserId, ExpireTime: expireTime}, nil
 }
 
 func (r *monthCardRepo) GetMonthCardRward(ctx context.Context, req *pb.GetMonthCardRewardRequest) (*pb.GetMonthCardRewardReply, error) {
@@ -64,7 +71,6 @@ func (r *monthCardRepo) GetMonthCardList(ctx context.Context, req *pb.GetMonthCa
 	var cardData []*pb.GetMonthCardListReplyCardData
 	for _, v := range list {
 		ts := biz.FormatDays{}
-		fmt.Println(v)
 		json.Unmarshal([]byte(v), &ts)
 		fmt.Println(ts.Day)
 		cardData = append(cardData, &pb.GetMonthCardListReplyCardData{Day: ts.Day, Status: ts.Status, RewardId: ts.RewardId, RewardUrl: ts.RewardUrl})
@@ -74,7 +80,8 @@ func (r *monthCardRepo) GetMonthCardList(ctx context.Context, req *pb.GetMonthCa
 
 func (r *monthCardRepo) IsOpenMonthCard(ctx context.Context, userId int64) bool {
 	status := r.data.rdb.HGet(ctx, fmt.Sprintf("monthCard:userId:%d", userId), "userId")
-	return status != nil
+	fmt.Println(status.Val())
+	return status.Val() != ""
 }
 
 func (r *monthCardRepo) getShowDays(currentDay int64) []string {

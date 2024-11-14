@@ -41,6 +41,7 @@ func NewGormDB(c *conf.Data) (*gorm.DB, error) {
 func NewRedisClient(c *conf.Data) (*redis.Client, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:         c.Redis.Addr,
+		Password:     c.Redis.Password,
 		WriteTimeout: c.Redis.WriteTimeout.AsDuration(),
 		ReadTimeout:  c.Redis.ReadTimeout.AsDuration(),
 	})

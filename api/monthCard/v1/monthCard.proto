@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package api.monthCard.v1;
+import "google/api/annotations.proto";
+
+option go_package = "monthCard/api/monthCard/v1;v1";
+option java_multiple_files = true;
+option java_package = "api.monthCard.v1";
+
+service MonthCard {
+	rpc OpenMonthCard (OpenMonthCardRequest) returns (OpenMonthCardReply){
+		option (google.api.http) = {
+			post: "/v1/openMonthCard"
+			body: "*"
+		};
+	};
+	rpc GetMonthCardRward (GetMonthCardRewardRequest) returns (GetMonthCardRewardReply){
+		option (google.api.http) = {
+			post: "/v1/getMonthCardReward"
+			body: "*"
+		};
+	};
+	rpc GetMonthCardList (GetMonthCardListRequest) returns (GetMonthCardListReply){
+		option (google.api.http) = {
+			post: "/v1/getMonthCardList"
+			body: "*"
+		};
+	};
+}
+message CommonReply {
+	int64 code = 1;
+	string msg = 2;
+}
+
+message rewarData {
+	int64 rewardId = 1;
+	int64 rewardNum = 2;
+	string rewardUrl = 3;
+}
+
+message OpenMonthCardRequest {
+	int64 userId = 1;
+}
+message OpenMonthCardReply {
+	int64  userId = 1;
+	int64 expireTime = 2;
+}
+
+message GetMonthCardRewardRequest {
+	int64 day = 1;
+}
+message GetMonthCardRewardReply {
+	CommonReply common = 1;
+}
+
+message GetMonthCardListRequest {
+	int64 userId = 1;
+}
+message GetMonthCardListReply {
+	//CommonReply common = 1;
+	message cardData {
+		int64 day = 1;
+		int64 status = 2;
+		int64 rewardId = 3;
+		string rewardUrl = 4;
+	}
+	repeated cardData list = 1;
+}

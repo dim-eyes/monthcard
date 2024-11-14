@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package api.monthCard.v1;
+
+option go_package = "monthCard/api/monthCard/v1;v1";
+option java_multiple_files = true;
+option java_package = "api.monthCard.v1";
+
+enum ErrorCode {
+  USER_NOT_FOUND = 0;
+  MONTH_CARD_HAVE_OPENED_ERROR = 1;
+  MONTH_CARD_NOT_OPEN = 2;
+}

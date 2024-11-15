@@ -16,10 +16,16 @@ type MonthCardReward struct {
 }
 
 type FormatDays struct {
-	Day       int64  `json:"day"`
-	Status    int64  `json:"status"`
-	RewardId  int64  `json:"rewardId"`
-	RewardUrl string `json:"rewardUrl"`
+	Day        int64  `json:"day"`
+	Status     int64  `json:"status"`
+	RewardId   int64  `json:"rewardId"`
+	RewardUrl  string `json:"rewardUrl"`
+	RewardNum  int64  `json:"rewardNum"`
+	RewardName string `json:"rewardName"`
+}
+
+type MonthCardInfo struct {
+	MonthCardId int64
 }
 
 type MonthCardList struct {

@@ -72,10 +72,21 @@ func (r *monthCardRepo) GetMonthCardRward(ctx context.Context, req *pb.GetMonthC
 
 	cardInfo, err := r.getUserMonthCardInfo(ctx, req.UserId)
 	if err != nil {
+		return nil, constant.NET_WORK_ERROR
+	}
+	if strings.Contains(cardInfo.days, fmt.Sprintf("%d", cardInfo.currentDay)) {
 		return nil, constant.MONTH_CARD_REWARD_HAVE_RECEIVED_ERROR
 	}
 	rewardData := r.getTodayReward(cardInfo.currentDay)
 	fmt.Println(rewardData)
+
+	res := r.data.db.WithContext(ctx).Model(&MonthCard{}).Where("userid =?", req.UserId).Update("days", fmt.Sprintf("%s,%d", cardInfo.days, cardInfo.currentDay))
+	if res.Error != nil {
+		return nil, constant.MONTH_CARD_REWARD_FAILED_ERROR
+	}
+
+	go r.sendReward(req.UserId, rewardData)
+
 	return &pb.GetMonthCardRewardReply{RewardId: rewardData.RewardId, RewardNum: rewardData.RewardNum, RewardName: rewardData.RewardName, RewardUrl: rewardData.RewardUrl}, nil
 }
 
@@ -84,7 +95,7 @@ func (r *monthCardRepo) GetMonthCardList(ctx context.Context, req *pb.GetMonthCa
 	r.logger.WithContext(ctx).Info("GetMonthCardList, userId: ", req.UserId)
 
 	openStatus := r.isOpenMonthCard(ctx, req.UserId)
-	if !openStatus {
+	if openStatus {
 		return nil, constant.MONTH_CARD_HAVE_OPENED_ERROR
 	}
 
@@ -104,6 +115,16 @@ func (r *monthCardRepo) GetMonthCardList(ctx context.Context, req *pb.GetMonthCa
 	return &pb.GetMonthCardListReply{EconomizeMoney: cardInfo.accrueMoney, SurplusDay: cardInfo.surplusDay, DayList: cardData}, nil
 }
 
+func (r *monthCardRepo) GetConfig(ctx context.Context) (*pb.GetMonthCardListReply, error) {
+	r.logger.WithContext(ctx).Info("GetConfig")
+	return nil, nil
+}
+
+func (r *monthCardRepo) sendReward(userId int64, rewardData *biz.FormatDays) {
+	r.logger.Info("sendReward, userId: ", userId)
+	fmt.Println(rewardData)
+}
+
 func (r *monthCardRepo) isOpenMonthCard(ctx context.Context, userId int64) bool {
 	status := r.data.rdb.HGet(ctx, fmt.Sprintf("monthCard:userId:%d", userId), "userId")
 	return status.Val() != ""
@@ -119,10 +140,9 @@ func (r *monthCardRepo) getUserMonthCardInfo(ctx context.Context, userId int64) 
 	currentTime := r.getCurrentTime()
 	diffTime := rm.ExpireTime - currentTime
 	surplusDay := diffTime / 86400
+	surplusDay = surplusDay - 1
 	if surplusDay < 1 {
 		surplusDay = 0
-	} else {
-		surplusDay = surplusDay - 1
 	}
 	return &monthCardInfo{currentDay: constant.DAY_OF_MONTH_CARD - surplusDay, accrueMoney: rm.SaveMoney, surplusDay: surplusDay, days: rm.Days}, nil
 }
@@ -167,6 +187,7 @@ func (r *monthCardRepo) getShowDays(currentDay int64, days string) []string {
 		}
 		ts := biz.FormatDays{}
 		ts.Day = int64(i)
+		ts.Status = constant.REWARD_STATUS_NOT_RECEIVED
 		if int64(i) > currentDay {
 			ts.Status = constant.REWARD_STATUS_WAIT
 		}

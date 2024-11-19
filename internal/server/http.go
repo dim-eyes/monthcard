@@ -15,6 +15,7 @@ import (
 func NewHTTPServer(c *conf.Server, monthCard *service.MonthCardService, logger log.Logger) *http.Server {
 	var opts = []http.ServerOption{
 		http.ResponseEncoder(encoder.RespEncoder),
+		http.ErrorEncoder(encoder.ErrorEncoder),
 		http.Middleware(
 			recovery.Recovery(),
 		),

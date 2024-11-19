@@ -75,7 +75,7 @@ func (r *monthCardRepo) GetMonthCardRward(ctx context.Context, req *pb.GetMonthC
 		return nil, constant.NET_WORK_ERROR
 	}
 	if strings.Contains(cardInfo.days, fmt.Sprintf("%d", cardInfo.currentDay)) {
-		return nil, constant.MONTH_CARD_REWARD_HAVE_RECEIVED_ERROR
+		return nil, constant.MONTH_CARD_REWARD_RECEIVED_ERROR
 	}
 	rewardData := r.getTodayReward(cardInfo.currentDay)
 	fmt.Println(rewardData)

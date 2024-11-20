@@ -56,5 +56,6 @@ func RespEncoder(w http.ResponseWriter, r *http.Request, i interface{}) error {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
+	w.WriteHeader(int(data[0]))
 	return nil
 }
